@@ -7,16 +7,19 @@ CFLAGS = -g -Wall -Wpedantic -Wextra -fsanitize=address,undefined,signed-integer
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
 
-all: main
+all: main assembler
 
 %.o: %.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-main: $(OBJ)
-	$(CC) -o microcode $^ $(CFLAGS) $(LDFLAGS)
+main: src/main.o src/architecture.o
+	$(CC) -o architecture $^ $(CFLAGS) $(LDFLAGS)
+
+assembler: src/assembler.o
+	$(CC) -o assembler $^ $(CFLAGS) $(LDFLAGS)
 
 clean:
-	rm microcode $(OBJ)
+	rm architecture assembler $(OBJ)
 
 tidy:
 	clang-tidy src/* --
