@@ -2,6 +2,7 @@
 #define ARCHITECTURE_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define MAX_OPCODES (256)
 #define MAX_DATA_INS (127)
@@ -96,11 +97,12 @@ typedef enum {
 
 // Public functions
 Arch* gen_arch(void);
+bool is_mnemonic(char* str, uint8_t len);
 
 // Private functions
-void add_micro(Arch* arch, DATA_OE data_oe, DATA_IE data_ie, ADDR_OE addr_oe, ADDR_IE addr_ie, ALU_FUN alu_fun, uint8_t ctl);
-void new_ins(Arch* arch, char* mnemonic, ARG_TYPE arg, char* desc);
-void new_branch(Arch* arch, char* mnemonic, uint8_t bit, uint8_t set, char* desc);
+void add_micro(DATA_OE data_oe, DATA_IE data_ie, ADDR_OE addr_oe, ADDR_IE addr_ie, ALU_FUN alu_fun, uint8_t ctl);
+void new_ins(char* mnemonic, ARG_TYPE arg, char* desc);
+void new_branch(char* mnemonic, uint8_t bit, uint8_t set, char* desc);
 
 #endif // ARCHITECTURE_H
 
