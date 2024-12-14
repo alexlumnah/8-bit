@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "architecture.h"
 
@@ -10,6 +11,7 @@ Arch* gen_arch(void) {
 
     arch.insts = calloc(MAX_OPCODES, sizeof(Inst));
     arch.microcode = calloc(1 << (MICRO_ADDR_WIDTH + 1), MICRO_DATA_WIDTH / 8);
+    arch.initialized = true;
 
     // NOP
     new_ins("nop", ARG_NONE, "No operation");
@@ -156,6 +158,18 @@ Arch* gen_arch(void) {
     new_branch("bzc", 1, 0, "Branch if zero clear");
 
     return &arch;
+}
+
+bool is_mnemonic(char* str, long len) {
+
+    assert(arch.initialized && "ERROR: Must initialize architecture first");
+    if (len != 3) return false;
+
+    for (uint8_t i = 0; i < arch.count; i++) {
+        if (strncmp(arch.insts[i].mnemonic, str, 3) == 0) return true;
+    }
+
+    return false;
 }
 
 // Add microcode step to instruction

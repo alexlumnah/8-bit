@@ -15,7 +15,7 @@ all: main assembler
 main: src/main.o src/architecture.o
 	$(CC) -o architecture $^ $(CFLAGS) $(LDFLAGS)
 
-assembler: src/assembler.o
+assembler: src/assembler.o src/architecture.o
 	$(CC) -o assembler $^ $(CFLAGS) $(LDFLAGS)
 
 clean:

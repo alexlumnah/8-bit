@@ -30,6 +30,7 @@ typedef struct {
     uint32_t* microcode;    // Microcode
 
     // Metadata
+    bool initialized;       // Whether architecture is initialized
     uint8_t opcode;         // Current working opcode
     uint8_t count;          // Total instruction count
     uint8_t data_count;     // Total number of data instructions
@@ -97,7 +98,7 @@ typedef enum {
 
 // Public functions
 Arch* gen_arch(void);
-bool is_mnemonic(char* str, uint8_t len);
+bool is_mnemonic(char* str, long len);
 
 // Private functions
 void add_micro(DATA_OE data_oe, DATA_IE data_ie, ADDR_OE addr_oe, ADDR_IE addr_ie, ALU_FUN alu_fun, uint8_t ctl);
