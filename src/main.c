@@ -5,7 +5,7 @@
 
 int main(void) {
 
-    Arch* arch = gen_arch();
+    Arch* arch = generate_architecture();
 
     // Dump out microcode
     char* arg_strings[] = {"      ", "<BYTE>", "<ADDR>", "<PNTR>"};

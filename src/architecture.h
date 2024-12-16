@@ -79,11 +79,22 @@ typedef enum {
 
 typedef enum {
     ALU_DEFAULT = 0,
-    ALU_AND = 1,    // Carry should be set
-    ALU_SUB = 6,
-    ALU_ADD = 9,
-    ALU_OR = 11,
+    ALU_AND     = 1,    // Carry should be set
+    ALU_SUB     = 6,
+    ALU_ADD     = 9,
+    ALU_OR      = 11,
 } ALU_FUN;
+
+typedef enum {
+    FLAG_CARRY = 0,
+    FLAG_ZERO  = 1,
+    FLAG_TBD   = 2,
+} FLAG_TYPE;
+
+typedef enum {
+    FLAG_CLR = 0,
+    FLAG_SET = 1,
+} FLAG_STATE;
 
 typedef enum {
     CTL_NONE            = 0,
@@ -97,8 +108,10 @@ typedef enum {
 } CTL_LINES;
 
 // Public functions
-Arch* gen_arch(void);
+Arch* generate_architecture(void);
 bool is_mnemonic(char* str, long len);
+bool ins_exists(char* str, ARG_TYPE type);
+uint8_t get_opcode(char* str, ARG_TYPE type);
 
 // Private functions
 void add_micro(DATA_OE data_oe, DATA_IE data_ie, ADDR_OE addr_oe, ADDR_IE addr_ie, ALU_FUN alu_fun, uint8_t ctl);

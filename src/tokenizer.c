@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "architecture.h"
+#include "tokenizer.h"
 
 #define IS_NUMBER(c) ((c) >= '0' && (c) <= '9')
 #define IS_LETTER(c) ((c) >= 'A' && (c) <= 'z')
@@ -20,37 +21,6 @@
 #define PRINT_ERR(str) (printf("ERROR Line %ld: " str "\n", tz.line))
 
 #define DEFAULT_TOKEN_CAPACITY (1 << 8)
-
-typedef enum {
-    TOKEN_END,
-    TOKEN_MNEMONIC,
-    TOKEN_LABEL,
-    TOKEN_NUMBER,
-    TOKEN_STRING,
-    TOKEN_STAR,
-    TOKEN_COLON,
-} TokenType;
-
-typedef struct {
-    TokenType type;
-    uint32_t val;       // Value of number token
-    char* str;          // Pointer to string in source code
-    uint32_t len;       // Length of string
-
-    uint32_t line;      // Line in source code
-} Token;
-
-typedef struct {
-    char* src;      // Source code
-    long len;       // Length of source code
-
-    char* curs;     // Current position in source code
-    long line;      // Current line in source code
-
-    Token* tokens;  // Array of Tokens
-    int capacity;   // Token Array Capacity
-    int count;      // Count of Tokens in Array
-} Tokenizer;
 
 Tokenizer tz;
 
@@ -128,7 +98,7 @@ uint32_t parse_hex(char* str, long len) {
 uint32_t parse_dec(char* str, long len) {
 
     uint32_t value = 0;
-    for (int i = 2; i < len; i++) {
+    for (int i = 0; i < len; i++) {
         char c = *(str + i);
         value = value * 10 + (c - '0');
     }
@@ -163,7 +133,10 @@ bool match(char val) {
     return true;
 }
 
-int tokenize(void) {
+int tokenize(const char* file, Token** tokens) {
+
+    // Read source and initialize file
+    read_source(file);
 
     char* c = tz.src;
     while (*c != 0) {
@@ -172,7 +145,8 @@ int tokenize(void) {
         c = skip_white_space(c);
 
         Token t;
-        t.str = c;  // Start of token string
+        t.str = c;          // Start of token string
+        t.line = tz.line;   // Current line
 
         // Mnemonic or Label
         if (IS_LETTER(*c)) {
@@ -201,7 +175,7 @@ int tokenize(void) {
             t.len = c - t.str;
             if (t.len == 2) {
                 PRINT_ERR("Expect value after '0x'");
-                return 1;
+                return 0;
             }
 
             // Now parse the hex
@@ -231,7 +205,7 @@ int tokenize(void) {
             // Confirm there is a closing quote
             if (*(c + 2) != '\'') {
                 PRINT_ERR("Expect closing ' after char");
-                return 1;
+                return 0;
             }
 
             t.len = c - t.str;
@@ -250,7 +224,7 @@ int tokenize(void) {
 
             if (*c == 0) {
                 PRINT_ERR("Reached end of file while parsing string");
-                return 1;
+                return 0;
             }
             c++;
             t.len = c - t.str;
@@ -276,10 +250,11 @@ int tokenize(void) {
         default:
             PRINT_ERR("Unexpected character while parsing");
             printf("'%d'\n", (int)*c);
-            return 1;
+            return 0;
         }
         store_token(t);
     }
 
-    return 0;
+    *tokens = tz.tokens;
+    return tz.count;
 }

@@ -7,7 +7,7 @@
 
 Arch arch;
 
-Arch* gen_arch(void) {
+Arch* generate_architecture(void) {
 
     arch.insts = calloc(MAX_OPCODES, sizeof(Inst));
     arch.microcode = calloc(1 << (MICRO_ADDR_WIDTH + 1), MICRO_DATA_WIDTH / 8);
@@ -77,7 +77,7 @@ Arch* gen_arch(void) {
     add_micro(OE_Y, IE_X, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
 
     // ALU Operations
-    new_ins("add", ARG_BYTE, "Add immediate value A register");
+    new_ins("add", ARG_BYTE, "Add immediate value to A register");
     add_micro(OE_RAM, IE_B, OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
     add_micro(OE_ALU, IE_A, OE_NO_ADDR, IE_NO_ADDR, ALU_ADD,     CTL_SET_STATUS);
 
@@ -86,6 +86,14 @@ Arch* gen_arch(void) {
     add_micro(OE_RAM, IE_MR_LO, OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
     add_micro(OE_RAM, IE_B,     OE_MR,      IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
     add_micro(OE_ALU, IE_A,     OE_NO_ADDR, IE_NO_ADDR, ALU_ADD,     CTL_SET_STATUS);
+
+    new_ins("adx", ARG_NONE, "Add X register to A register");
+    add_micro(OE_X,   IE_B, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
+    add_micro(OE_ALU, IE_A, OE_NO_ADDR, IE_NO_ADDR, ALU_ADD,     CTL_SET_STATUS);
+
+    new_ins("ady", ARG_NONE, "Add Y register to A register");
+    add_micro(OE_Y,   IE_B, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
+    add_micro(OE_ALU, IE_A, OE_NO_ADDR, IE_NO_ADDR, ALU_ADD,     CTL_SET_STATUS);
 
     new_ins("sub", ARG_BYTE, "Subtract immediate value from A register");
     add_micro(OE_RAM, IE_B, OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
@@ -96,6 +104,26 @@ Arch* gen_arch(void) {
     add_micro(OE_RAM, IE_MR_LO, OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
     add_micro(OE_RAM, IE_B,     OE_MR,      IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
     add_micro(OE_ALU, IE_A,     OE_NO_ADDR, IE_NO_ADDR, ALU_SUB,     CTL_SET_STATUS);
+
+    new_ins("sbx", ARG_NONE, "Subtract X register from A register");
+    add_micro(OE_X,   IE_B, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
+    add_micro(OE_ALU, IE_A, OE_NO_ADDR, IE_NO_ADDR, ALU_SUB,     CTL_SET_STATUS);
+
+    new_ins("sby", ARG_NONE, "Subtract Y register from A register");
+    add_micro(OE_Y,   IE_B, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_NONE);
+    add_micro(OE_ALU, IE_A, OE_NO_ADDR, IE_NO_ADDR, ALU_SUB,     CTL_SET_STATUS);
+
+    // Compare instructions
+    new_ins("cmp", ARG_BYTE, "Compare A register to immediate value");
+    add_micro(OE_S,   IE_S, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_SET_CARRY);
+    add_micro(OE_RAM, IE_B, OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
+    add_micro(OE_NO_DATA, IE_NO_DATA, OE_NO_ADDR, IE_NO_ADDR, ALU_SUB, CTL_SET_STATUS);
+
+    new_ins("cmp", ARG_PNTR, "Compare A register to value in memory");
+    add_micro(OE_S,       IE_S,       OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_SET_CARRY);
+    add_micro(OE_RAM,     IE_MR_HI,   OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
+    add_micro(OE_RAM,     IE_MR_LO,   OE_PC,      IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
+    add_micro(OE_NO_DATA, IE_NO_DATA, OE_NO_ADDR, IE_NO_ADDR, ALU_SUB, CTL_SET_STATUS);
 
     // Set / Clear Status Flags
     new_ins("scf", ARG_NONE, "Set Carry Flag");
@@ -135,7 +163,7 @@ Arch* gen_arch(void) {
     new_ins("jmp", ARG_ADDR, "Jump to address");
     add_micro(OE_RAM,     IE_MR_HI,   OE_PC, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
     add_micro(OE_RAM,     IE_MR_LO,   OE_PC, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
-    add_micro(OE_NO_DATA, IE_NO_DATA, OE_MR, IE_PC,      ALU_DEFAULT, CTL_PC_INC);
+    add_micro(OE_NO_DATA, IE_NO_DATA, OE_MR, IE_PC,      ALU_DEFAULT, CTL_NONE);
 
     // Call/Return From Subroutrine
     new_ins("csr", ARG_ADDR, "Call subroutine");
@@ -151,15 +179,20 @@ Arch* gen_arch(void) {
     add_micro(OE_RAM,     IE_MR_LO,   OE_SP, IE_NO_ADDR, ALU_DEFAULT, CTL_SP_INC);  // Pop lo PC off stack
     add_micro(OE_NO_DATA, IE_NO_DATA, OE_MR, IE_PC,      ALU_DEFAULT, CTL_NONE);    // Set PC to address
 
+    // Halt
+    new_ins("hlt", ARG_NONE, "Halt processor");
+    arch.microcode[arch.opcode * MAX_STEPS] = 0; // Overwrite fetch instruction to halt processor
+
     // Branch instructions
-    new_branch("bcs", 0, 1, "Branch if carry set");
-    new_branch("bcc", 0, 0, "Branch if carry clear");
-    new_branch("bzs", 1, 1, "Branch if zero set");
-    new_branch("bzc", 1, 0, "Branch if zero clear");
+    new_branch("bcs", FLAG_CARRY, FLAG_SET, "Branch if carry set");
+    new_branch("bcc", FLAG_CARRY, FLAG_CLR, "Branch if carry clear");
+    new_branch("bzs", FLAG_ZERO,  FLAG_SET, "Branch if zero set");
+    new_branch("bzc", FLAG_ZERO,  FLAG_CLR, "Branch if zero clear");
 
     return &arch;
 }
 
+// Return whether mnemonic exists
 bool is_mnemonic(char* str, long len) {
 
     assert(arch.initialized && "ERROR: Must initialize architecture first");
@@ -170,6 +203,30 @@ bool is_mnemonic(char* str, long len) {
     }
 
     return false;
+}
+
+// Return whether instruction exists
+bool ins_exists(char* str, ARG_TYPE type) {
+
+    for (uint8_t i = 0; i < arch.count; i++) {
+        Inst ins = arch.insts[i];
+        if (strncmp(ins.mnemonic, str, 3) == 0 && ins.arg_type == type)
+            return true;
+    }
+
+    return false;
+}
+
+// Return opcode if it exists
+uint8_t get_opcode(char* str, ARG_TYPE type) {
+
+    for (uint8_t i = 0; i < arch.count; i++) {
+        Inst ins = arch.insts[i];
+        if (strncmp(ins.mnemonic, str, 3) == 0 && ins.arg_type == type)
+            return ins.opcode;
+    }
+
+    return 0;
 }
 
 // Add microcode step to instruction
@@ -237,10 +294,14 @@ void new_branch(char* mnemonic, uint8_t bit, uint8_t set, char* desc) {
     for (uint8_t i = 0; i < 8; i++) {
         arch.opcode = opcode + i;
         add_micro(OE_RAM, IE_I, OE_PC, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
-        if ((arch.opcode & (1 << bit)) == set) {
+        if (((arch.opcode >> bit) & 1) == set) {
             add_micro(OE_RAM,     IE_MR_HI,   OE_PC, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
             add_micro(OE_RAM,     IE_MR_LO,   OE_PC, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
-            add_micro(OE_NO_DATA, IE_NO_DATA, OE_MR, IE_PC,      ALU_DEFAULT, CTL_PC_INC);
+            add_micro(OE_NO_DATA, IE_NO_DATA, OE_MR, IE_PC,      ALU_DEFAULT, CTL_NONE);
+        } else {
+            add_micro(OE_NO_DATA, IE_NO_DATA, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
+            add_micro(OE_NO_DATA, IE_NO_DATA, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_PC_INC);
+
         }
         add_micro(OE_NO_DATA, IE_NO_DATA, OE_NO_ADDR, IE_NO_ADDR, ALU_DEFAULT, CTL_RESET_STEP);
         arch.step = 0;
